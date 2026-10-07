@@ -1,0 +1,1292 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>멘델 유전 꽃집 - 60초 타임어택 챌린지</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+    body {
+      font-family: 'Pretendard', 'Malgun Gothic', sans-serif;
+      background: #2d1e18;
+      color: #333;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    #game-container {
+      width: 1000px;
+      height: 720px;
+      position: relative;
+      background: #e8f5e9;
+      border: 12px solid #5d4037;
+      border-radius: 16px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ===== [인게임 카운터 화면: 따뜻한 동화풍 테마] ===== */
+    #window-view {
+      height: 270px;
+      background: linear-gradient(to bottom, #87ceeb 0%, #b0e0e6 60%, #91d881 60%, #4caf50 100%);
+      position: relative;
+      display: flex;
+      justify-content: space-around;
+      align-items: flex-end;
+      padding-bottom: 10px;
+      border-bottom: 8px solid #3e2723;
+    }
+
+    .shop-sign {
+      position: absolute;
+      top: 10px;
+      background: #8d6e63;
+      color: #fff;
+      padding: 6px 20px;
+      border-radius: 20px;
+      font-weight: bold;
+      font-size: 18px;
+      border: 3px solid #5d4037;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    }
+
+    .timer-display {
+      position: absolute;
+      top: 12px;
+      right: 20px;
+      background: #ff5722;
+      color: white;
+      padding: 8px 18px;
+      border-radius: 12px;
+      font-size: 18px;
+      font-weight: bold;
+      border: 3px solid #d84315;
+      box-shadow: 0 4px rgba(0,0,0,0.2);
+    }
+
+    /* 동물 손님 카드 */
+    .customer-card {
+      width: 250px;
+      height: 210px;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 16px;
+      border: 3px solid #795548;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 10px;
+      box-shadow: 0 8px 15px rgba(0,0,0,0.15);
+      transition: all 0.2s;
+    }
+    .customer-card.drag-over {
+      background: #e8f5e9;
+      border-color: #2e7d32;
+      transform: scale(1.03);
+    }
+    .customer-avatar { font-size: 36px; margin-bottom: 2px; }
+    .customer-name { font-weight: bold; font-size: 13px; color: #5d4037; margin-bottom: 4px; }
+    .order-box {
+      width: 100%;
+      background: #fff8e1;
+      border: 1px dashed #ffa000;
+      border-radius: 8px;
+      padding: 6px;
+      font-size: 11px;
+      flex-grow: 1;
+      pointer-events: none;
+    }
+    .order-item { margin: 2px 0; display: flex; justify-content: space-between; align-items: center; }
+    .order-item.completed { text-decoration: line-through; color: #aaa; }
+    .order-reward { margin-top: 4px; font-weight: bold; color: #2e7d32; text-align: right; }
+
+    /* 하단: 작업대 카운터 */
+    #counter-top {
+      flex-grow: 1;
+      background: #d7ccc8;
+      border-top: 6px solid #a1887f;
+      display: grid;
+      grid-template-columns: 190px 1fr 230px;
+      gap: 12px;
+      padding: 12px;
+    }
+
+    .section-box {
+      background: #efebe9;
+      border: 2px solid #8d6e63;
+      border-radius: 12px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .section-title {
+      font-size: 13px;
+      font-weight: bold;
+      color: #4e342e;
+      margin-bottom: 8px;
+    }
+
+    /* 순종 꽃 바구니 */
+    .basket-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      width: 100%;
+    }
+    .flower-source {
+      background: #fff;
+      border: 2px solid #ccc;
+      border-radius: 10px;
+      padding: 6px;
+      cursor: grab;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: transform 0.2s;
+    }
+    .flower-source:active { cursor: grabbing; }
+    .flower-source:hover { transform: scale(1.05); }
+    .gene-tag { font-size: 10px; font-weight: bold; color: #666; margin-top: 2px; }
+
+    .flower-svg-icon {
+      width: 32px;
+      height: 32px;
+      filter: drop-shadow(0px 2px 3px rgba(0,0,0,0.2));
+    }
+
+    /* 조합소 & 보관함 */
+    #center-zone {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .workbench-container {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      width: 100%;
+    }
+    .workbench-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.6);
+      padding: 4px 8px;
+      border-radius: 10px;
+    }
+    .slot {
+      width: 50px;
+      height: 50px;
+      background: #fff;
+      border: 2px dashed #a1887f;
+      border-radius: 10px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: all 0.2s;
+    }
+    .slot.drag-over {
+      background: #fff3e0;
+      border-color: #ff9800;
+    }
+    .plus-sign { font-size: 16px; font-weight: bold; color: #8d6e63; }
+    
+    .combine-btn {
+      background: #4caf50;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 3px #2e7d32;
+    }
+    .combine-btn:active { transform: translateY(2px); box-shadow: none; }
+
+    .inventory {
+      width: 100%;
+      height: 85px;
+      background: #fff;
+      border: 2px solid #bcaaa4;
+      border-radius: 8px;
+      display: flex;
+      gap: 8px;
+      padding: 6px;
+      overflow-x: auto;
+      margin-top: 6px;
+    }
+    .inventory-item {
+      min-width: 58px;
+      height: 68px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: grab;
+      background: #fafafa;
+    }
+    .inventory-item:active { cursor: grabbing; }
+
+    /* 드롭존 */
+    .drop-zones-container {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      width: 100%;
+      height: 100%;
+    }
+
+    .drop-zone-card {
+      flex: 1;
+      background: #fff;
+      border: 2px dashed #8d6e63;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 6px;
+      text-align: center;
+      transition: all 0.2s;
+    }
+    .drop-zone-card.drag-over { transform: scale(1.03); }
+
+    #magnifier-zone.drag-over { background: #e3f2fd; border-color: #2196f3; }
+    #shop-zone.drag-over { background: #e8f5e9; border-color: #4caf50; }
+    #trash-zone.drag-over { background: #ffebee; border-color: #f44336; }
+
+    .zone-icon { font-size: 22px; margin-bottom: 2px; }
+    .zone-label { font-size: 12px; font-weight: bold; color: #4e342e; }
+    .zone-subtext { font-size: 10px; color: #777; margin-top: 2px; }
+
+    .earnings-badge {
+      margin-top: 4px;
+      width: 100%;
+      background: #e8f5e9;
+      border: 2px solid #4caf50;
+      border-radius: 8px;
+      padding: 6px;
+      text-align: center;
+    }
+    .earnings-title { font-size: 10px; color: #2e7d32; font-weight: bold; }
+    .earnings-value { font-size: 14px; font-weight: bold; color: #1b5e20; margin-top: 1px; }
+
+    /* ===== [시작 화면: 화면 가득 찬 들판 + 모던 SVG 꽃집 + 동물 친구들] ===== */
+    #start-screen-overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(180deg, #38bdf8 0%, #7dd3fc 35%, #86efac 35%, #22c55e 70%, #15803d 100%);
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    .hills-layer {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      height: 380px;
+      pointer-events: none;
+    }
+
+    .modern-flower-shop {
+      position: absolute;
+      bottom: 110px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 2;
+      filter: drop-shadow(0 20px 30px rgba(0,0,0,0.25));
+    }
+
+    .modern-animals-layer {
+      position: absolute;
+      bottom: 40px;
+      width: 80%;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      z-index: 4;
+      pointer-events: none;
+    }
+
+    .animal-character {
+      font-size: 80px;
+      filter: drop-shadow(0 15px 15px rgba(0, 0, 0, 0.25));
+    }
+    .animal-character.rabbit { animation: floatSlow 2.4s ease-in-out infinite alternate; }
+    .animal-character.bear { animation: floatSlow 2.8s ease-in-out 0.4s infinite alternate; }
+    .animal-character.fox { animation: floatSlow 2.6s ease-in-out 0.8s infinite alternate; }
+
+    @keyframes floatSlow {
+      0% { transform: translateY(0) scale(1); }
+      100% { transform: translateY(-16px) scale(1.03); }
+    }
+
+    .start-ui-card {
+      position: relative;
+      z-index: 10;
+      margin-top: 35px;
+      background: rgba(255, 255, 255, 0.90);
+      backdrop-filter: blur(16px);
+      border: 2px solid rgba(255, 255, 255, 0.6);
+      border-radius: 32px;
+      padding: 28px 48px;
+      text-align: center;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    }
+
+    .game-hero-title {
+      font-size: 32px;
+      font-weight: 900;
+      color: #0f172a;
+      letter-spacing: -1px;
+      margin-bottom: 6px;
+    }
+    .game-hero-sub {
+      font-size: 14px;
+      color: #475569;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+
+    .modern-start-btn {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: white;
+      border: none;
+      padding: 16px 48px;
+      font-size: 22px;
+      font-weight: 900;
+      border-radius: 50px;
+      cursor: pointer;
+      box-shadow: 0 10px 25px rgba(217, 119, 6, 0.4), inset 0 2px 0 rgba(255,255,255,0.3);
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      letter-spacing: -0.5px;
+    }
+    .modern-start-btn:hover {
+      transform: translateY(-3px) scale(1.03);
+      box-shadow: 0 15px 30px rgba(217, 119, 6, 0.5);
+    }
+    .modern-start-btn:active {
+      transform: translateY(2px) scale(0.98);
+      box-shadow: 0 5px 15px rgba(217, 119, 6, 0.4);
+    }
+
+    /* 이름 입력 폼 단계 */
+    #name-modal-step {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    .name-guide-text {
+      font-size: 16px;
+      font-weight: 800;
+      color: #1e293b;
+    }
+    .name-input-box {
+      width: 240px;
+      padding: 12px 18px;
+      font-size: 20px;
+      border: 2px solid #cbd5e1;
+      border-radius: 16px;
+      text-align: center;
+      font-weight: 800;
+      outline: none;
+      background: #f8fafc;
+      transition: all 0.2s;
+    }
+    .name-input-box:focus {
+      border-color: #f59e0b;
+      background: #ffffff;
+      box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.2);
+    }
+    .name-error-info {
+      font-size: 12px;
+      color: #ef4444;
+      min-height: 16px;
+      font-weight: 700;
+    }
+
+    /* 3초 카운트다운 레이어 */
+    #countdown-overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(12px);
+      z-index: 200;
+      display: none;
+      justify-content: center;
+      align-items: center;
+    }
+    .countdown-number {
+      font-size: 150px;
+      font-weight: 900;
+      color: #fbbf24;
+      text-shadow: 0 10px 30px rgba(251, 191, 36, 0.5);
+      animation: popCount 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) infinite alternate;
+    }
+    @keyframes popCount {
+      0% { transform: scale(0.7); opacity: 0.5; }
+      100% { transform: scale(1.1); opacity: 1; }
+    }
+
+    /* 결과 모달 */
+    #overlay-result, #modal {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.75);
+      z-index: 150;
+      display: none;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .overlay-card {
+      background: white;
+      width: 480px;
+      padding: 25px;
+      border-radius: 20px;
+      border: 5px solid #5d4037;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+    .overlay-title { font-size: 22px; color: #3e2723; margin-bottom: 12px; font-weight: bold; }
+    .overlay-desc { font-size: 14px; color: #555; line-height: 1.6; margin-bottom: 15px; }
+
+    /* 게임 오버 퀴즈 영역 */
+    .quiz-card {
+      margin-top: 15px;
+      padding: 16px;
+      background: #f0fdf4;
+      border: 2px dashed #22c55e;
+      border-radius: 14px;
+      text-align: center;
+    }
+    .quiz-title {
+      font-size: 14px;
+      font-weight: 800;
+      color: #15803d;
+      margin-bottom: 8px;
+    }
+    .quiz-question {
+      font-size: 15px;
+      font-weight: 700;
+      color: #1e293b;
+      margin-bottom: 12px;
+      line-height: 1.4;
+    }
+    .quiz-input-row {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .quiz-input {
+      width: 180px;
+      padding: 8px 12px;
+      border: 2px solid #cbd5e1;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 800;
+      text-align: center;
+      outline: none;
+    }
+    .quiz-input:focus {
+      border-color: #22c55e;
+      box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
+    }
+    .quiz-feedback {
+      font-size: 13px;
+      font-weight: 700;
+      min-height: 18px;
+    }
+
+    .close-btn { background: #8d6e63; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; }
+
+    #toast {
+      position: absolute;
+      bottom: 15px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.85);
+      color: white;
+      padding: 8px 18px;
+      border-radius: 20px;
+      font-size: 12px;
+      display: none;
+      z-index: 50;
+    }
+  </style>
+</head>
+<body>
+
+<div id="game-container">
+  <!-- 상단 인게임 카운터 시점 -->
+  <div id="window-view">
+    <div class="shop-sign" id="shop-title-display">🌸 OO이의 멘델 유전 꽃집 🌸</div>
+    <div class="timer-display" id="timer-display">⏱️ 60초</div>
+    <div id="customers-container" style="display: flex; width: 100%; justify-content: space-around;"></div>
+  </div>
+
+  <!-- 하단 작업대 카운터 -->
+  <div id="counter-top">
+    <!-- 1. 순종 꽃 바구니 -->
+    <div class="section-box">
+      <div class="section-title">🧺 순종 꽃 바구니</div>
+      <div class="basket-grid">
+        <div class="flower-source" draggable="true" ondragstart="handleDragStart(event, 'BB', 'BB', '파란 꽃', 'source')">
+          <div class="flower-icon-wrap" id="icon-src-BB"></div>
+          <span class="gene-tag">파란 꽃 (BB)</span>
+        </div>
+        <div class="flower-source" draggable="true" ondragstart="handleDragStart(event, 'YY', 'YY', '노란 꽃', 'source')">
+          <div class="flower-icon-wrap" id="icon-src-YY"></div>
+          <span class="gene-tag">노란 꽃 (YY)</span>
+        </div>
+        <div class="flower-source" draggable="true" ondragstart="handleDragStart(event, 'RR', 'RR', '빨간 꽃', 'source')">
+          <div class="flower-icon-wrap" id="icon-src-RR"></div>
+          <span class="gene-tag">빨간 꽃 (RR)</span>
+        </div>
+        <div class="flower-source" draggable="true" ondragstart="handleDragStart(event, 'WW', 'WW', '하얀 꽃', 'source')">
+          <div class="flower-icon-wrap" id="icon-src-WW"></div>
+          <span class="gene-tag">하얀 꽃 (WW)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. 유전자 조합소 & 보관함 -->
+    <div class="section-box" id="center-zone">
+      <div class="section-title">
+        🔬 유전자 조합소 (3개 라인)
+      </div>
+      
+      <div class="workbench-container">
+        <!-- 조합 라인 1 -->
+        <div class="workbench-row">
+          <div class="slot" id="slot-0" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDropToSlot(event, 0)" onclick="clearSlot(0)"></div>
+          <span class="plus-sign">+</span>
+          <div class="slot" id="slot-1" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDropToSlot(event, 1)" onclick="clearSlot(1)"></div>
+          <button class="combine-btn" onclick="crossBreed(0)">교배</button>
+        </div>
+
+        <!-- 조합 라인 2 -->
+        <div class="workbench-row">
+          <div class="slot" id="slot-2" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDropToSlot(event, 2)" onclick="clearSlot(2)"></div>
+          <span class="plus-sign">+</span>
+          <div class="slot" id="slot-3" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDropToSlot(event, 3)" onclick="clearSlot(3)"></div>
+          <button class="combine-btn" onclick="crossBreed(1)">교배</button>
+        </div>
+
+        <!-- 조합 라인 3 -->
+        <div class="workbench-row">
+          <div class="slot" id="slot-4" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDropToSlot(event, 4)" onclick="clearSlot(4)"></div>
+          <span class="plus-sign">+</span>
+          <div class="slot" id="slot-5" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDropToSlot(event, 5)" onclick="clearSlot(5)"></div>
+          <button class="combine-btn" onclick="crossBreed(2)">교배</button>
+        </div>
+      </div>
+
+      <div style="width: 100%;">
+        <div class="section-title" style="margin-bottom: 2px;">💐 제작된 꽃 보관함</div>
+        <div class="inventory" id="inventory"></div>
+      </div>
+    </div>
+
+    <!-- 3. 드롭존 & 실시간 소득 현황 -->
+    <div class="section-box">
+      <div class="section-title">🛠️ 드롭 실행 칸</div>
+      <div class="drop-zones-container">
+        <div class="drop-zone-card" id="magnifier-zone" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDropToMagnifier(event)">
+          <div class="zone-icon">🔍</div>
+          <div class="zone-label">돋보기 분석소</div>
+          <div class="zone-subtext">유전 법칙 확인</div>
+        </div>
+
+        <div class="drop-zone-card" id="shop-zone" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDropToShopZone(event)">
+          <div class="zone-icon">💰</div>
+          <div class="zone-label">일반 판매소</div>
+          <div class="zone-subtext">주문서에 자동 전달</div>
+        </div>
+
+        <div class="drop-zone-card" id="trash-zone" style="flex:0.6;" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDropToTrash(event)">
+          <div class="zone-label" style="color:#c62828;">🗑️ 쓰레기통</div>
+        </div>
+      </div>
+
+      <div class="earnings-badge">
+        <div class="earnings-title">🏆 1분 타임어택 현황</div>
+        <div class="earnings-value" id="total-money">0 원 (0송이)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== [메인 시작 화면 레이어] ===== -->
+  <div id="start-screen-overlay">
+    <svg class="hills-layer" viewBox="0 0 1000 380" preserveAspectRatio="none">
+      <path d="M0,220 Q250,140 500,200 T1000,180 L1000,380 L0,380 Z" fill="#4ade80" opacity="0.7"/>
+      <path d="M0,260 Q350,180 700,240 T1000,220 L1000,380 L0,380 Z" fill="#22c55e"/>
+    </svg>
+
+    <div class="start-ui-card">
+      <div class="game-hero-title">🌸 멘델 유전 꽃집 🌸</div>
+      <div class="game-hero-sub">멘델의 유전 법칙으로 최고의 꽃집 매출 고점에 도전하세요!</div>
+
+      <div id="start-step-1">
+        <button class="modern-start-btn" onclick="goToNameStep()">게임 시작!</button>
+      </div>
+
+      <div id="name-modal-step">
+        <div class="name-guide-text">이름을 입력하세요 (2자~5자)</div>
+        <input type="text" id="owner-name-input" class="name-input-box" maxlength="5" placeholder="이름 작성">
+        <div class="name-error-info" id="name-error-msg"></div>
+        <button class="modern-start-btn" style="font-size: 18px; padding: 12px 36px;" onclick="confirmNameAndCountdown()">오픈 준비 완료 🚀</button>
+      </div>
+    </div>
+
+    <!-- 배경 모던 꽃집 건물 모형 -->
+    <div class="modern-flower-shop">
+      <svg width="280" height="200" viewBox="0 0 280 200">
+        <polygon points="20,80 140,10 260,80" fill="#b91c1c"/>
+        <polygon points="10,80 140,5 270,80" fill="#dc2626"/>
+        <rect x="35" y="80" width="210" height="110" rx="6" fill="#fef3c7" stroke="#d97706" stroke-width="3"/>
+        <rect x="55" y="105" width="60" height="50" rx="8" fill="#bae6fd" stroke="#0284c7" stroke-width="3"/>
+        <line x1="85" y1="105" x2="85" y2="155" stroke="#0284c7" stroke-width="2"/>
+        <line x1="55" y1="130" x2="115" y2="130" stroke="#0284c7" stroke-width="2"/>
+        <rect x="165" y="105" width="50" height="85" rx="6" fill="#78350f"/>
+        <circle cx="178" cy="148" r="4" fill="#fbbf24"/>
+        <rect x="60" y="45" width="160" height="32" rx="8" fill="#451a03" stroke="#f59e0b" stroke-width="2"/>
+        <text x="140" y="66" font-size="14" font-weight="900" fill="#fef08a" text-anchor="middle">멘델 유전 꽃집</text>
+      </svg>
+    </div>
+
+    <!-- 들판 동물 캐릭터 -->
+    <div class="modern-animals-layer">
+      <div class="animal-character rabbit">🐰</div>
+      <div class="animal-character bear">🐻</div>
+      <div class="animal-character fox">🦊</div>
+    </div>
+  </div>
+
+  <!-- 3초 카운트다운 레이어 -->
+  <div id="countdown-overlay">
+    <div class="countdown-number" id="countdown-num">3</div>
+  </div>
+
+  <!-- 결과 오버레이 (퀴즈 미션 추가) -->
+  <div id="overlay-result">
+    <div class="overlay-card">
+      <div class="overlay-title">⏰ TIME OVER!</div>
+      <div class="overlay-desc" id="result-text"></div>
+
+      <!-- 게임 오버 유전 법칙 퀴즈 섹션 -->
+      <div class="quiz-card">
+        <div class="quiz-title">🧬 멘델 유전 퀴즈를 풀어야 영업 재개 가능!</div>
+        <div class="quiz-question" id="quiz-question-text">질문이 여기에 표시됩니다.</div>
+        <div class="quiz-input-row">
+          <input type="text" id="quiz-answer-input" class="quiz-input" placeholder="예: RR 또는 RR 유전자">
+          <button class="combine-btn" style="padding: 8px 16px; font-size: 14px;" onclick="checkQuizAnswer()">제출</button>
+        </div>
+        <div class="quiz-feedback" id="quiz-feedback-msg"></div>
+      </div>
+
+      <!-- 퀴즈 맞춘 후 나타나는 메인으로 돌아가기 버튼 -->
+      <button id="restart-game-btn" class="modern-start-btn" style="font-size:17px; padding:12px 32px; margin-top: 15px; display: none;" onclick="showStartScreen()">메인으로 돌아가기 🔄</button>
+    </div>
+  </div>
+
+  <!-- 돋보기 모달 -->
+  <div id="modal">
+    <div class="overlay-card" style="width: 420px; border-width:4px;">
+      <div class="overlay-title" id="modal-title" style="font-size:18px;">돋보기 분석 결과</div>
+      <div class="overlay-desc" id="modal-body" style="text-align:left; background:#f9f9f9; padding:10px; border-radius:8px;"></div>
+      <button class="close-btn" onclick="closeModal()">확인</button>
+    </div>
+  </div>
+
+  <div id="toast">알림</div>
+</div>
+
+<script>
+  // SVG 꽃 팔레트
+  const COLOR_PALETTE = {
+    'BB': { petal: '#1e88e5', center: '#ffd54f' },
+    'YY': { petal: '#fdd835', center: '#795548' },
+    'RR': { petal: '#e53935', center: '#fdd835' },
+    'WW': { petal: '#ffffff', center: '#fdd835' },
+    'BW': { petal: '#81d4fa', center: '#fff59d' },
+    'YW': { petal: '#fff59d', center: '#ffe082' },
+    'RW': { petal: '#f48fb1', center: '#fff59d' }
+  };
+
+  function getFlowerSVG(geneKey) {
+    const col = COLOR_PALETTE[geneKey] || { petal: '#cccccc', center: '#ffff88' };
+    return `
+      <svg class="flower-svg-icon" viewBox="0 0 100 100">
+        <g transform="translate(50,50)">
+          <ellipse cx="0" cy="-28" rx="14" ry="22" fill="${col.petal}" stroke="#444" stroke-width="2"/>
+          <ellipse cx="0" cy="-28" rx="14" ry="22" fill="${col.petal}" stroke="#444" stroke-width="2" transform="rotate(45)"/>
+          <ellipse cx="0" cy="-28" rx="14" ry="22" fill="${col.petal}" stroke="#444" stroke-width="2" transform="rotate(90)"/>
+          <ellipse cx="0" cy="-28" rx="14" ry="22" fill="${col.petal}" stroke="#444" stroke-width="2" transform="rotate(135)"/>
+          <ellipse cx="0" cy="-28" rx="14" ry="22" fill="${col.petal}" stroke="#444" stroke-width="2" transform="rotate(180)"/>
+          <ellipse cx="0" cy="-28" rx="14" ry="22" fill="${col.petal}" stroke="#444" stroke-width="2" transform="rotate(225)"/>
+          <ellipse cx="0" cy="-28" rx="14" ry="22" fill="${col.petal}" stroke="#444" stroke-width="2" transform="rotate(270)"/>
+          <ellipse cx="0" cy="-28" rx="14" ry="22" fill="${col.petal}" stroke="#444" stroke-width="2" transform="rotate(315)"/>
+          <circle cx="0" cy="0" r="16" fill="${col.center}" stroke="#444" stroke-width="2"/>
+        </g>
+      </svg>
+    `;
+  }
+
+  // 유전 정보
+  const GENE_RULES = {
+    'BB+WW': { name: '하늘색 꽃', gene: 'BW', law: '중간 유전 (불완전우성)', desc: '파란색 유전자(B)와 하얀색 유전자(W)가 조합되어 중간색인 하늘색(BW)이 표현되었습니다.' },
+    'YY+WW': { name: '연노랑 꽃', gene: 'YW', law: '중간 유전 (불완전우성)', desc: '노란색 유전자(Y)와 하얀색 유전자(W)가 만나 옅은 중간색인 연노랑(YW) 꽃이 만들어졌습니다.' },
+    'RR+WW': { name: '분홍색 꽃', gene: 'RW', law: '중간 유전 (불완전우성)', desc: '빨간색(R)과 하얀색(W)의 우열 관계가 명확하지 않아 중간 형질인 분홍색(RW)이 나타납니다.' },
+    'BB+BB': { name: '파란 꽃', gene: 'BB', law: '순종 보존 (분리의 법칙)', desc: '동형접합(BB) 어버이로부터 파란색 유전자만 물려받았습니다.' },
+    'YY+YY': { name: '노란 꽃', gene: 'YY', law: '순종 보존 (분리의 법칙)', desc: '동형접합(YY) 어버이로부터 노란색 유전자만 물려받았습니다.' },
+    'RR+RR': { name: '빨간 꽃', gene: 'RR', law: '순종 보존 (분리의 법칙)', desc: '동형접합(RR) 어버이로부터 빨간색 유전자만 물려받았습니다.' },
+    'WW+WW': { name: '하얀 꽃', gene: 'WW', law: '순종 보존 (분리의 법칙)', desc: '동형접합(WW) 어버이로부터 하얀색 유전자만 물려받았습니다.' }
+  };
+
+  const HYBRID_RULES = {
+    'BW+BW': [
+      { name: '파란 꽃', gene: 'BB', prob: 0.25, law: '분리의 법칙', desc: '잡종(BW) 교배 시 자손에서 파란 꽃(BB)이 25% 확률로 다시 분리되어 나옵니다.' },
+      { name: '하늘색 꽃', gene: 'BW', prob: 0.50, law: '중간 유전 (분리의 법칙)', desc: '잡종(BW) 교배 시 자손에서 하늘색 꽃(BW)이 50% 확률로 나타납니다.' },
+      { name: '하얀 꽃', gene: 'WW', prob: 0.25, law: '분리의 법칙', desc: '잡종(BW) 교배 시 하얀 꽃(WW)이 25% 확률로 분리되어 드러납니다.' }
+    ],
+    'YW+YW': [
+      { name: '노란 꽃', gene: 'YY', prob: 0.25, law: '분리의 법칙', desc: '연노랑 꽃(YW)끼리 교배하면 1:2:1의 확률로 노란 꽃(YY)이 다시 분리됩니다.' },
+      { name: '연노랑 꽃', gene: 'YW', prob: 0.50, law: '중간 유전', desc: '연노랑 꽃(YW) 유전자형이 50% 확률로 유지됩니다.' },
+      { name: '하얀 꽃', gene: 'WW', prob: 0.25, law: '분리의 법칙', desc: '연노랑 꽃(YW)끼리 교배하여 하얀 꽃(WW)이 25% 확률로 분리되었습니다.' }
+    ],
+    'RW+RW': [
+      { name: '빨간 꽃', gene: 'RR', prob: 0.25, law: '분리의 법칙 (중간유전)', desc: '분홍 꽃(RW)끼리 교배하면 1:2:1의 유전자형 분리비로 빨간 꽃이 나옵니다.' },
+      { name: '분홍색 꽃', gene: 'RW', prob: 0.50, law: '중간 유전', desc: '분홍 꽃(RW) 유전자가 유지됩니다.' },
+      { name: '하얀 꽃', gene: 'WW', prob: 0.25, law: '분리의 법칙 (중간유전)', desc: '분홍 꽃(RW)끼리 교배하여 하얀 꽃이 다시 분리되었습니다.' }
+    ]
+  };
+
+  // 게임 오버 퀴즈 질문 데이터 베이스
+  const QUIZ_QUESTIONS = [
+    { gene1: 'BB', gene2: 'WW', targetGene: 'BW', q: 'BB유전자와 WW유전자가 멘델 유전하면 어떤 유전자가 되나요?' },
+    { gene1: 'YY', gene2: 'WW', targetGene: 'YW', q: 'YY유전자와 WW유전자가 멘델 유전하면 어떤 유전자가 되나요?' },
+    { gene1: 'RR', gene2: 'WW', targetGene: 'RW', q: 'RR유전자와 WW유전자가 멘델 유전하면 어떤 유전자가 되나요?' },
+    { gene1: 'BB', gene2: 'BB', targetGene: 'BB', q: 'BB유전자와 BB유전자가 멘델 유전하면 어떤 유전자가 되나요?' },
+    { gene1: 'YY', gene2: 'YY', targetGene: 'YY', q: 'YY유전자와 YY유전자가 멘델 유전하면 어떤 유전자가 되나요?' },
+    { gene1: 'RR', gene2: 'RR', targetGene: 'RR', q: 'RR유전자와 RR유전자가 멘델 유전하면 어떤 유전자가 되나요?' },
+    { gene1: 'WW', gene2: 'WW', targetGene: 'WW', q: 'WW유전자와 WW유전자가 멘델 유전하면 어떤 유전자가 되나요?' }
+  ];
+
+  const customers = [
+    { id: 1, name: '토끼 손님 🐰', avatar: '🐰', orders: [{ gene: 'BW', name: '하늘색 꽃(BW)', count: 1 }, { gene: 'WW', name: '하얀 꽃(WW)', count: 1 }], price: 3500 },
+    { id: 2, name: '곰 손님 🐻', avatar: '🐻', orders: [{ gene: 'RW', name: '분홍색 꽃(RW)', count: 2 }, { gene: 'BB', name: '파란 꽃(BB)', count: 1 }], price: 4200 },
+    { id: 3, name: '여우 손님 🦊', avatar: '🦊', orders: [{ gene: 'YW', name: '연노랑 꽃(YW)', count: 1 }, { gene: 'RR', name: '빨간 꽃(RR)', count: 1 }], price: 3800 }
+  ];
+
+  let selectedSlots = [null, null, null, null, null, null];
+  let inventory = [];
+  let totalEarnings = 0;
+  let totalSoldFlowers = 0;
+  let draggedData = null;
+  let ownerName = "";
+
+  let timeLeft = 60;
+  let timerInterval = null;
+  let isGameActive = false;
+  let highScoreMoney = 0;
+  let highScoreCount = 0;
+  let currentQuizAnswer = '';
+
+  window.onload = () => {
+    document.getElementById('icon-src-BB').innerHTML = getFlowerSVG('BB');
+    document.getElementById('icon-src-YY').innerHTML = getFlowerSVG('YY');
+    document.getElementById('icon-src-RR').innerHTML = getFlowerSVG('RR');
+    document.getElementById('icon-src-WW').innerHTML = getFlowerSVG('WW');
+
+    // 퀴즈 답안 제출 엔터키 이벤트 감지
+    document.getElementById('quiz-answer-input').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        checkQuizAnswer();
+      }
+    });
+  };
+
+  function goToNameStep() {
+    document.getElementById('start-step-1').style.display = 'none';
+    const step2 = document.getElementById('name-modal-step');
+    step2.style.display = 'flex';
+    document.getElementById('owner-name-input').focus();
+  }
+
+  function confirmNameAndCountdown() {
+    const inputEl = document.getElementById('owner-name-input');
+    const errorEl = document.getElementById('name-error-msg');
+    const val = inputEl.value.trim();
+
+    if (val.length < 2 || val.length > 5) {
+      errorEl.innerText = '⚠️ 이름은 최소 2자에서 5자까지 입력해야 합니다.';
+      return;
+    }
+
+    errorEl.innerText = '';
+    ownerName = val;
+
+    document.getElementById('shop-title-display').innerText = `🌸 ${ownerName}의 멘델 유전 꽃집 🌸`;
+    document.getElementById('start-screen-overlay').style.display = 'none';
+    start3SecCountdown();
+  }
+
+  function start3SecCountdown() {
+    const cdOverlay = document.getElementById('countdown-overlay');
+    const cdNum = document.getElementById('countdown-num');
+    cdOverlay.style.display = 'flex';
+
+    let count = 3;
+    cdNum.innerText = count;
+
+    const cdInterval = setInterval(() => {
+      count--;
+      if (count > 0) {
+        cdNum.innerText = count;
+      } else if (count === 0) {
+        cdNum.innerText = "START!";
+      } else {
+        clearInterval(cdInterval);
+        cdOverlay.style.display = 'none';
+        startGame();
+      }
+    }, 900);
+  }
+
+  function showStartScreen() {
+    document.getElementById('overlay-result').style.display = 'none';
+    document.getElementById('start-step-1').style.display = 'block';
+    document.getElementById('name-modal-step').style.display = 'none';
+    document.getElementById('start-screen-overlay').style.display = 'flex';
+  }
+
+  function startGame() {
+    totalEarnings = 0;
+    totalSoldFlowers = 0;
+    timeLeft = 60;
+    isGameActive = true;
+    
+    inventory = [];
+    selectedSlots = [null, null, null, null, null, null];
+    for (let i = 0; i < 6; i++) {
+      clearSlot(i);
+    }
+
+    updateEarningsDisplay();
+    renderCustomers();
+    renderInventory();
+
+    document.getElementById('timer-display').innerText = `⏱️ ${timeLeft}초`;
+
+    if (timerInterval) clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+      timeLeft--;
+      document.getElementById('timer-display').innerText = `⏱️ ${timeLeft}초`;
+
+      if (timeLeft <= 0) {
+        endGame();
+      }
+    }, 1000);
+  }
+
+  function endGame() {
+    clearInterval(timerInterval);
+    isGameActive = false;
+
+    if (totalEarnings > highScoreMoney) {
+      highScoreMoney = totalEarnings;
+      highScoreCount = totalSoldFlowers;
+    }
+
+    const resultHTML = `
+      <div style="font-size:16px; font-weight:bold; color:#5d4037; margin-bottom:8px;">
+        🌸 [${ownerName}의 멘델 유전 꽃집] 60초 결과
+      </div>
+      <div style="font-size:18px; font-weight:bold; color:#2e7d32; margin-bottom:12px;">
+        💐 이번 실적: <b>${totalEarnings.toLocaleString()} 원</b> (${totalSoldFlowers}송이)
+      </div>
+      <div style="background:#fff3e0; padding:10px; border-radius:10px; border:1px solid #ffe082;">
+        🏆 최고 고점: <b>${highScoreMoney.toLocaleString()} 원</b> (${highScoreCount}송이)
+      </div>
+    `;
+    document.getElementById('result-text').innerHTML = resultHTML;
+
+    // 퀴즈 문제 출제 및 초기화
+    setupGameOverQuiz();
+
+    document.getElementById('overlay-result').style.display = 'flex';
+  }
+
+  function setupGameOverQuiz() {
+    const randomQuiz = QUIZ_QUESTIONS[Math.floor(Math.random() * QUIZ_QUESTIONS.length)];
+    currentQuizAnswer = randomQuiz.targetGene;
+
+    document.getElementById('quiz-question-text').innerText = `❓ ${randomQuiz.q}`;
+    document.getElementById('quiz-answer-input').value = '';
+    
+    const feedbackEl = document.getElementById('quiz-feedback-msg');
+    feedbackEl.innerText = '';
+    feedbackEl.style.color = '#dc2626';
+
+    document.getElementById('restart-game-btn').style.display = 'none';
+  }
+
+  function checkQuizAnswer() {
+    const inputEl = document.getElementById('quiz-answer-input');
+    const feedbackEl = document.getElementById('quiz-feedback-msg');
+    const restartBtn = document.getElementById('restart-game-btn');
+
+    let rawVal = inputEl.value.trim().toUpperCase().replace(/\s+/g, '');
+    // "RR유전자", "RR 유전자", "RR꽃" 등의 입력에서 백본 유전자 코드만 추출
+    let cleanVal = rawVal.replace(/유전자$/, '').replace(/꽃$/, '');
+
+    if (cleanVal === currentQuizAnswer) {
+      feedbackEl.style.color = '#16a34a';
+      feedbackEl.innerText = '🎉 정답입니다! 다시시작 버튼이 활성화되었습니다.';
+      restartBtn.style.display = 'inline-block';
+    } else {
+      feedbackEl.style.color = '#dc2626';
+      feedbackEl.innerText = '❌ 오답입니다! 정답 유전자(예: RR 또는 RR 유전자)를 정확히 작성해 주세요.';
+      restartBtn.style.display = 'none';
+    }
+  }
+
+  function renderCustomers() {
+    const container = document.getElementById('customers-container');
+    container.innerHTML = '';
+
+    customers.forEach((cust, index) => {
+      const card = document.createElement('div');
+      card.className = 'customer-card';
+      card.ondragover = (e) => handleDragOver(e);
+      card.ondragleave = (e) => handleDragLeave(e);
+      card.ondrop = (e) => handleDropToSpecificCustomer(e, index);
+
+      let orderHTML = '';
+      cust.orders.forEach(ord => {
+        const isDone = ord.count === 0;
+        orderHTML += `
+          <div class="order-item ${isDone ? 'completed' : ''}">
+            <span style="display:flex; align-items:center; gap:4px;">
+              ${getFlowerSVG(ord.gene)} ${ord.name}
+            </span>
+            <span><b>${isDone ? '완료 ✓' : ord.count + '송이'}</b></span>
+          </div>
+        `;
+      });
+
+      card.innerHTML = `
+        <div class="customer-avatar">${cust.avatar}</div>
+        <div class="customer-name">${cust.name}</div>
+        <div class="order-box">
+          <div style="font-weight:bold; margin-bottom:2px; color:#f57c00;">[주문서]</div>
+          ${orderHTML}
+          <div class="order-reward">완성 지불금: ${cust.price.toLocaleString()}원</div>
+        </div>
+      `;
+      container.appendChild(card);
+    });
+  }
+
+  function handleDragStart(event, gene, geneKey, name, origin, invIndex = null, law = '', desc = '') {
+    if (!isGameActive) return;
+    draggedData = { gene, geneKey, name, origin, invIndex, law, desc };
+    event.dataTransfer.setData('text/plain', JSON.stringify(draggedData));
+  }
+
+  function handleDragOver(event) {
+    if (!isGameActive) return;
+    event.preventDefault();
+    event.currentTarget.classList.add('drag-over');
+  }
+
+  function handleDragLeave(event) {
+    event.currentTarget.classList.remove('drag-over');
+  }
+
+  function handleDropToSlot(event, slotNum) {
+    event.preventDefault();
+    event.currentTarget.classList.remove('drag-over');
+    if (!isGameActive || !draggedData) return;
+
+    selectedSlots[slotNum] = { ...draggedData };
+    document.getElementById(`slot-${slotNum}`).innerHTML = getFlowerSVG(draggedData.geneKey);
+
+    if (draggedData.origin === 'inventory' && draggedData.invIndex !== null) {
+      inventory.splice(draggedData.invIndex, 1);
+      renderInventory();
+    }
+    draggedData = null;
+  }
+
+  function handleDropToMagnifier(event) {
+    event.preventDefault();
+    event.currentTarget.classList.remove('drag-over');
+    if (!draggedData) return;
+
+    document.getElementById('modal-title').innerText = `🔍 돋보기 분석: ${draggedData.name} (${draggedData.gene})`;
+    document.getElementById('modal-body').innerHTML = `
+      <b>• 유전자형:</b> ${draggedData.gene}<br>
+      <b>• 적용된 유전 법칙:</b> ${draggedData.law || '멘델 유전 법칙'}<br><br>
+      <b>[원리 설명]</b><br>
+      ${draggedData.desc || '대립유전자가 생식세포 형성을 거쳐 조합된 결과입니다.'}
+    `;
+    document.getElementById('modal').style.display = 'flex';
+    draggedData = null;
+  }
+
+  function handleDropToShopZone(event) {
+    event.preventDefault();
+    event.currentTarget.classList.remove('drag-over');
+    if (!isGameActive || !draggedData) return;
+
+    if (draggedData.origin === 'source') {
+      showToast('⚠️ 순종 바구니의 기본 꽃은 바로 판매할 수 없습니다!');
+      return;
+    }
+
+    let sold = false;
+    for (let cIdx = 0; cIdx < customers.length; cIdx++) {
+      if (trySellToCustomer(cIdx, draggedData)) {
+        sold = true;
+        break;
+      }
+    }
+
+    if (!sold) {
+      showToast('❌ 이 꽃을 주문하거나 필요한 손님이 현재 없습니다.');
+    } else {
+      if (draggedData.origin === 'inventory') {
+        inventory.splice(draggedData.invIndex, 1);
+        renderInventory();
+      }
+    }
+    draggedData = null;
+  }
+
+  function handleDropToSpecificCustomer(event, customerIndex) {
+    event.preventDefault();
+    event.currentTarget.classList.remove('drag-over');
+    if (!isGameActive || !draggedData) return;
+
+    if (draggedData.origin === 'source') {
+      showToast('⚠️ 순종 바구니의 기본 꽃은 바로 전달할 수 없습니다!');
+      return;
+    }
+
+    const cust = customers[customerIndex];
+    const orderNeed = cust.orders.find(o => o.gene === draggedData.gene && o.count > 0);
+
+    if (orderNeed) {
+      if (trySellToCustomer(customerIndex, draggedData)) {
+        if (draggedData.origin === 'inventory') {
+          inventory.splice(draggedData.invIndex, 1);
+          renderInventory();
+        }
+      }
+    } else {
+      showToast(`❌ ${cust.name}은(는) 이 꽃을 원하지 않습니다!`);
+    }
+    draggedData = null;
+  }
+
+  function handleDropToTrash(event) {
+    event.preventDefault();
+    event.currentTarget.classList.remove('drag-over');
+    if (!draggedData) return;
+
+    if (draggedData.origin === 'inventory') {
+      inventory.splice(draggedData.invIndex, 1);
+      renderInventory();
+      showToast(`🗑️ ${draggedData.name}을(를) 버렸습니다.`);
+    } else {
+      showToast('기본 원종 꽃 바구니는 버릴 수 없습니다.');
+    }
+    draggedData = null;
+  }
+
+  function trySellToCustomer(customerIndex, item) {
+    const cust = customers[customerIndex];
+    const targetOrder = cust.orders.find(o => o.gene === item.gene && o.count > 0);
+
+    if (targetOrder) {
+      targetOrder.count -= 1;
+      totalSoldFlowers += 1;
+
+      const unitPrice = 1500;
+      totalEarnings += unitPrice;
+      updateEarningsDisplay();
+
+      const remainingTotal = cust.orders.reduce((sum, o) => sum + o.count, 0);
+
+      if (remainingTotal === 0) {
+        const bonusReward = cust.price;
+        totalEarnings += bonusReward;
+        updateEarningsDisplay();
+
+        showToast(`🎉 ${cust.name} 주문 완수! 보너스 +${bonusReward.toLocaleString()}원!`);
+        refreshCustomer(customerIndex);
+      } else {
+        showToast(`💐 ${cust.name}에게 ${item.name} 전달! (+${unitPrice.toLocaleString()}원)`);
+        renderCustomers();
+      }
+      return true;
+    }
+    return false;
+  }
+
+  function updateEarningsDisplay() {
+    document.getElementById('total-money').innerText = `${totalEarnings.toLocaleString()} 원 (${totalSoldFlowers}송이)`;
+  }
+
+  function crossBreed(pairIndex = 0) {
+    if (!isGameActive) return false;
+    const idx1 = pairIndex * 2;
+    const idx2 = pairIndex * 2 + 1;
+    const p1 = selectedSlots[idx1];
+    const p2 = selectedSlots[idx2];
+
+    if (!p1 || !p2) {
+      showToast(`라인 ${pairIndex + 1}에 꽃 2송이를 채워주세요!`);
+      return false;
+    }
+
+    const primaryGenes = ['BB', 'YY', 'RR'];
+    if (primaryGenes.includes(p1.gene) && primaryGenes.includes(p2.gene) && p1.gene !== p2.gene) {
+      showToast('⚠️ 파란 꽃, 노란 꽃, 빨간 꽃끼리는 조합할 수 없습니다!');
+      return false;
+    }
+
+    const combo1 = `${p1.gene}+${p2.gene}`;
+    const combo2 = `${p2.gene}+${p1.gene}`;
+    let result = null;
+
+    if (HYBRID_RULES[combo1] || HYBRID_RULES[combo2]) {
+      const list = HYBRID_RULES[combo1] || HYBRID_RULES[combo2];
+      const rand = Math.random();
+      let cum = 0;
+      for (let r of list) {
+        cum += r.prob;
+        if (rand <= cum) { result = r; break; }
+      }
+    } else if (GENE_RULES[combo1] || GENE_RULES[combo2]) {
+      result = GENE_RULES[combo1] || GENE_RULES[combo2];
+    }
+
+    if (result) {
+      addInventory(result.gene, result.name, result.law, result.desc);
+      showToast(`✨ 새로운 ${result.name}(${result.gene})이(가) 탄생했습니다!`);
+      clearSlot(idx1);
+      clearSlot(idx2);
+      return true;
+    }
+    return false;
+  }
+
+  function addInventory(gene, name, law, desc) {
+    inventory.push({ gene, geneKey: gene, name, law, desc });
+    renderInventory();
+  }
+
+  function renderInventory() {
+    const invEl = document.getElementById('inventory');
+    invEl.innerHTML = '';
+
+    inventory.forEach((item, index) => {
+      const div = document.createElement('div');
+      div.className = 'inventory-item';
+      div.draggable = true;
+      div.ondragstart = (e) => handleDragStart(e, item.gene, item.geneKey, item.name, 'inventory', index, item.law, item.desc);
+      
+      div.innerHTML = `
+        ${getFlowerSVG(item.geneKey)}
+        <span style="font-size: 10px; font-weight: bold; margin-top: 2px;">${item.gene}</span>
+      `;
+      invEl.appendChild(div);
+    });
+  }
+
+  function clearSlot(slotNum) {
+    selectedSlots[slotNum] = null;
+    const slotEl = document.getElementById(`slot-${slotNum}`);
+    if (slotEl) slotEl.innerText = '';
+  }
+
+  function refreshCustomer(index) {
+    const possibleOrders = [
+      { gene: 'BW', name: '하늘색 꽃(BW)' },
+      { gene: 'YW', name: '연노랑 꽃(YW)' },
+      { gene: 'RW', name: '분홍색 꽃(RW)' },
+      { gene: 'BB', name: '파란 꽃(BB)' },
+      { gene: 'YY', name: '노란 꽃(YY)' },
+      { gene: 'RR', name: '빨간 꽃(RR)' },
+      { gene: 'WW', name: '하얀 꽃(WW)' }
+    ];
+
+    const animals = [
+      { name: '토끼 손님 🐰', avatar: '🐰' },
+      { name: '곰 손님 🐻', avatar: '🐻' },
+      { name: '여우 손님 🦊', avatar: '🦊' },
+      { name: '고양이 손님 🐱', avatar: '🐱' },
+      { name: '강아지 손님 🐶', avatar: '🐶' }
+    ];
+
+    const randomAnimal = animals[Math.floor(Math.random() * animals.length)];
+    const orderCount = Math.floor(Math.random() * 2) + 1;
+    const orders = [];
+
+    for (let i = 0; i < orderCount; i++) {
+      const item = possibleOrders[Math.floor(Math.random() * possibleOrders.length)];
+      const qty = Math.floor(Math.random() * 2) + 1;
+      orders.push({ gene: item.gene, name: item.name, count: qty });
+    }
+
+    const price = 3000 + Math.floor(Math.random() * 5) * 500;
+
+    customers[index] = {
+      id: Date.now(),
+      name: randomAnimal.name,
+      avatar: randomAnimal.avatar,
+      orders: orders,
+      price: price
+    };
+
+    renderCustomers();
+  }
+
+  function closeModal() {
+    document.getElementById('modal').style.display = 'none';
+  }
+
+  function showToast(message) {
+    const toast = document.getElementById('toast');
+    toast.innerText = message;
+    toast.style.display = 'block';
+    setTimeout(() => {
+      toast.style.display = 'none';
+    }, 2500);
+  }
+</script>
+</body>
+</html>
